@@ -44,7 +44,7 @@ class ff_nn_model():
     #+
     #-
     def __init__(self, batch_size=100, hidden_size=512, input_size=784, learning_rate=0.001,
-                 model_file=None, num_class=10, num_epoch=5, root_folder=None,
+                 model_file=None, num_class=10, num_epoch=10, root_folder=None,
                  shuffle_test=False, shuffle_train=True,
                  test_dataset=None, train_dataset=None, verbose=False):
         self.batch_size = batch_size
