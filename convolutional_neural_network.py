@@ -1,3 +1,4 @@
+import argparse
 import matplotlib.pyplot as plot
 import numpy as np
 import os
@@ -99,7 +100,7 @@ class conv_nn_model():
         self.print("initializing model...")
         self.model = conv_nn(self.n_class).to(self.device)
         self.file_model = \
-            os.path.join(os.path.dirname(__file__), "model", "convolutional_neural_network.dct") \
+            os.path.join(os.path.dirname(__file__), "model", "cnn.dct") \
             if (file == None) else file
         if os.path.exists(self.file_model):
             self.print(f"  loading existing model: {self.file_model}")
@@ -217,6 +218,20 @@ class conv_nn_model():
 #--------------------------------------------------------------------------------------------------
 #+
 #-
+def main(args):
+    nn_model = conv_nn_model(batch_size=args.batch_size, learning_rate=args.learning_rate,
+                             model_file=args.model_file, num_epoch=args.num_epoch,
+                             root_folder=args.root_folder, verbose=args.verbose)
+    nn_model.train()
+    if args.save_model:
+        nn_model.save()
+    if args.test_model:
+        nn_model.test(display_incorrect=True)
+    
+
+#--------------------------------------------------------------------------------------------------
+#+
+#-
 def test_conv_nn_model(save_model=False):
     print("---------- testing model ----------")
     dir = "C:\\data"
@@ -232,6 +247,20 @@ def test_conv_nn_model(save_model=False):
 # main entry point
 #-
 if (__name__ == "__main__"):
-    test_conv_nn_model(save_model=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--batch_size", default=100, type=int, help="training batch size")
+    parser.add_argument("--learning_rate", default=0.001, type=float,
+                        help="step size for updating model weights during training")
+    parser.add_argument("--model_file", default=None, type=str, help="input model file")
+    parser.add_argument("--num_class", default=10, type=int,
+                        help="number of classes.unless modified to use a different dataset, leave at 10.")
+    parser.add_argument("--num_epoch", default=10, type=int, help="number of training epochs")
+    parser.add_argument("--root_folder", default="C:\\data", type=str,
+                        help="folder to download MNIST data into")
+    parser.add_argument("--save_model", default=True, type=bool, help="save final model")
+    parser.add_argument("--test_model", default=True, type=bool, help="test the final model")
+    parser.add_argument("--verbose", default=True, type=bool, help="display verbose output")
+    args = parser.parse_args()
+    main(args)
 
 

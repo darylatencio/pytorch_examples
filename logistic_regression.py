@@ -1,3 +1,4 @@
+import argparse
 import matplotlib.pyplot as plot
 import numpy as np
 import os
@@ -21,7 +22,7 @@ class lr_model():
     #----------------------------------------------------------------------------------------------
     #+
     #-
-    def __init__(self, batch_size=100, input_size=784, learning_rate=0.001,
+    def __init__(self, batch_size=100, image_size=784, learning_rate=0.001,
                  model_file=None, num_class=10, num_epoch=5, root_folder=None,
                  shuffle_test=False, shuffle_train=True,
                  test_dataset=None, train_dataset=None, verbose=False):
@@ -29,7 +30,7 @@ class lr_model():
         self.batch_size = batch_size
         self.dir = os.path.join(os.path.join(tempfile.gettempdir(),"data"),"pytorch") \
             if (root_folder == None) else root_folder
-        self.input_size = input_size
+        self.image_size = image_size
         self.learning_rate = learning_rate
         self.n_class = num_class
         self.n_epoch = num_epoch
@@ -38,7 +39,7 @@ class lr_model():
                                     shuffle_test=shuffle_test, shuffle_train=shuffle_train)
         self.initialize_model(model_file)
         str = f"initialized\n  device: {self.device}\n"+ \
-            f"  input size: {self.input_size}\n"+ \
+            f"  input size: {self.image_size}\n"+ \
             f"  learning rate: {self.learning_rate}\n  number of classes: {self.n_class}\n"+ \
             f"  number of epochs: {self.n_epoch}\n  root folder: {self.dir}"
         self.print(str)
@@ -66,7 +67,7 @@ class lr_model():
     #-
     def initialize_model(self, file):
         self.print("initializing model...")
-        self.model = nn.Linear(self.input_size, self.n_class).to(self.device)
+        self.model = nn.Linear(self.image_size, self.n_class).to(self.device)
         self.file_model = \
             os.path.join(os.path.dirname(__file__), "model", "logistic_regression.dct") \
             if (file == None) else file
@@ -160,8 +161,8 @@ class lr_model():
         n_step = len(self.dl_train)
         for i_epoch in range(self.n_epoch):
             for i_step, (img, label) in enumerate(self.dl_train):
-            # reshape to [batch_size, input_size]
-                img = img.reshape(-1, self.input_size).to(self.device)
+            # reshape to [batch_size, image_size]
+                img = img.reshape(-1, self.image_size).to(self.device)
                 label = label.to(self.device)
             # forward
                 outputs = self.model(img)
@@ -182,6 +183,26 @@ class lr_model():
         if save_model:
             self.save(model_file)
 
+    # def __init__(self, batch_size=100, image_size=784, learning_rate=0.001,
+    #              model_file=None, num_class=10, num_epoch=5, root_folder=None,
+    #              shuffle_test=False, shuffle_train=True,
+    #              test_dataset=None, train_dataset=None, verbose=False):
+
+#--------------------------------------------------------------------------------------------------
+#+
+#-
+def main(args):
+    model = lr_model(batch_size=args.batch_size, image_size=args.image_size,
+                     learning_rate=args.learning_rate, model_file=args.model_file,
+                     num_class=args.num_class, num_epoch=args.num_epoch,
+                     root_folder=args.root_folder, shuffle_test=args.shuffle_test,
+                     shuffle_train=args.shuffle_train, verbose=args.verbose)
+    model.train()
+    if args.save_model:
+        model.save()
+    if args.test_model:
+        model.test(display_incorrect=True)
+
 #--------------------------------------------------------------------------------------------------
 #+
 #-
@@ -200,4 +221,22 @@ def test_logistic_regression(save_model=False):
 # main entry point
 #-
 if (__name__ == "__main__"):
-    test_logistic_regression(save_model=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--batch_size", default=100, type=int, help="training batch size")
+    parser.add_argument("--image_size", default=784, type=int,
+                        help="number of pixels in the images. for the sample data used, leave at 784 (28x28)")
+    parser.add_argument("--learning_rate", default=0.001, type=float,
+                        help="step size for updating model weights during training")
+    parser.add_argument("--model_file", default=None, type=str, help="input model file")
+    parser.add_argument("--num_class", default=10, type=int,
+                        help="number of classes.unless modified to use a different dataset, leave at 10.")
+    parser.add_argument("--num_epoch", default=5, type=int, help="number of training epochs")
+    parser.add_argument("--root_folder", default="C:\\data", type=str,
+                        help="folder to download MNIST data into")
+    parser.add_argument("--save_model", default=True, type=bool, help="save final model")
+    parser.add_argument("--shuffle_test", default=True, type=bool, help="shuffle the test data")
+    parser.add_argument("--shuffle_train", default=True, type=bool, help="shuffle the training data")
+    parser.add_argument("--test_model", default=True, type=bool, help="test the final model")
+    parser.add_argument("--verbose", default=True, type=bool, help="display verbose output")
+    args = parser.parse_args()
+    main(args)

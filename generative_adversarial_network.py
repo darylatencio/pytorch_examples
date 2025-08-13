@@ -1,3 +1,4 @@
+import argparse
 import matplotlib.pyplot as plot
 import numpy as np
 import os
@@ -45,8 +46,8 @@ class generative_adversarial_model():
     #----------------------------------------------------------------------------------------------
     #+
     #-
-    def generate_test_image(self, img):
-        img_out = img.reshape(img.size(0), 1, self.dim[0], self.dim[1])
+    def generate_test_image(self, img, dim):
+        img_out = img.reshape(img.size(0), 1, dim[0], dim[1])
         img_out = torchvision.utils.make_grid(img_out)
         img_out = img_out.cpu().numpy() if img_out.is_cuda else img_out.numpy()
         img_out = np.transpose(img_out, axes=(1,2,0))
@@ -158,14 +159,15 @@ class generative_adversarial_model():
         g.axis("off")
         g.text(0.0, 1.01, "real data", color="#000000", transform=g.transAxes)
         img, void = next(iter(self.data_loader))
-        g.imshow(self.generate_test_image(img), cmap="gray")
+        dim = img.shape[2:4]
+        g.imshow(self.generate_test_image(img, dim), cmap="gray")
     # fake image
         g = self.grid[1]
         g.axis("off")
         g.text(0.0, 1.01, "fake data", color="#000000", transform=g.transAxes)
         z = torch.randn(self.batch_size, self.latent_size).to(self.device)
         img = self.generator(z)
-        g.imshow(self.generate_test_image(img), cmap="gray")
+        g.imshow(self.generate_test_image(img, dim), cmap="gray")
         if from_train:
             plot.ion()
         if self.fig.get_visible():
@@ -185,7 +187,6 @@ class generative_adversarial_model():
         n_epoch = self.n_epoch if (num_epoch == None) else num_epoch
         for i_epoch in range(n_epoch):
             for i_img, (img, void) in enumerate(self.data_loader):
-                self.dim = img.shape[2:4]
                 img = img.reshape(self.batch_size, -1).to(self.device)
                 label_real = torch.ones(self.batch_size, 1).to(self.device)
                 label_fake = torch.zeros(self.batch_size, 1).to(self.device)
@@ -229,6 +230,24 @@ class generative_adversarial_model():
 #--------------------------------------------------------------------------------------------------
 #+
 #-
+def main(args):
+    ga_model = generative_adversarial_model(batch_size=args.batch_size,
+                                            discriminator_file=args.discriminator_file,
+                                            generator_file=args.generator_file,
+                                            hidden_size=args.hidden_size,
+                                            image_size=args.image_size,
+                                            latent_size=args.latent_size,
+                                            learning_rate=args.learning_rate,
+                                            root_folder=args.root_folder, verbose=args.verbose)
+    ga_model.train(num_epoch=args.num_epoch, save_epochs=args.save_epochs,
+                   save_models=args.save_model, show_progress=args.show_progress)
+    if args.test:
+        ga_model.test()
+
+
+#--------------------------------------------------------------------------------------------------
+#+
+#-
 def test_ga_model():
     dir = "C:\\data"
     ga_model = generative_adversarial_model(root_folder=dir, verbose=True)
@@ -239,4 +258,25 @@ def test_ga_model():
 #+
 #-
 if (__name__ == "__main__"):
-    test_ga_model()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--batch_size", default=100, type=int, help="training batch size")
+    parser.add_argument("--discriminator_file", default=None, type=str, help="input discriminator file")
+    parser.add_argument("--generator_file", default=None, type=str, help="input generator file")
+    parser.add_argument("--hidden_size", default=256, type=int, help="number of neurons in the hidden layers")
+    parser.add_argument("--image_size", default=784, type=int,
+                        help="number of pixels in the images. for the sample data used, leave at 784 (28x28)")
+    parser.add_argument("--latent_size", default=64, type=int, help="dimensionality of the latent space")
+    parser.add_argument("--learning_rate", default=0.0002, type=float,
+                        help="step size for updating model weights during training")
+    parser.add_argument("--num_epoch", default=100, type=int, help="number of training epochs")
+    parser.add_argument("--relu_neg_slope", default=0.2, type=float,
+                        help="non-zero negative slope for negative inputs")
+    parser.add_argument("--root_folder", default="C:\\data", type=str, help="folder to download MNIST data into")
+    parser.add_argument("--save_epochs", default=True, type=bool, help="save model after each epoch")
+    parser.add_argument("--save_model", default=True, type=bool, help="save model")
+    parser.add_argument("--show_progress", default=True, type=bool, help="display results during model training")
+    parser.add_argument("--shuffle", default=True, type=bool, help="shuffle the sample data")
+    parser.add_argument("--test", default=True, type=bool, help="test the model after training")
+    parser.add_argument("--verbose", default=True, type=bool, help="display verbose output")
+    args = parser.parse_args()
+    main(args)
